@@ -1,0 +1,100 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0 16px 48px;
+  background: #f6f6f4;
+  color: #222;
+  font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 20px;
+}
+.topbar .logo { height: 30px; }
+.topbar h1 { margin: 0; font-size: 18px; flex: 1; }
+
+.card {
+  max-width: 720px;
+  margin: 0 auto 20px;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #e3e3e0;
+  border-radius: 10px;
+}
+.card h2 { margin: 0 0 12px; font-size: 16px; }
+
+.hint { font-size: 13px; color: #666; }
+.hint code { background: #f0f0ee; padding: 1px 5px; border-radius: 3px; }
+
+label { display: block; margin: 14px 0 4px; font-size: 14px; font-weight: 600; }
+
+input[type="text"], input[type="password"], input[type="file"] {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+  font-family: inherit;
+}
+
+button {
+  padding: 9px 18px;
+  border-radius: 6px;
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+}
+button.primary { margin-top: 16px; border: 0; background: #2b6cb0; color: #fff; }
+button.ghost { border: 1px solid #bbb; background: transparent; color: #555; }
+button.danger { border: 1px solid #c53030; background: transparent; color: #c53030; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.status {
+  max-width: 720px;
+  margin: 0 auto 16px;
+  padding: 11px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.status.info { background: #e8f0f9; color: #1f4e79; }
+.status.success { background: #e6f4ea; color: #1d6f36; }
+.status.error { background: #fdecec; color: #a12020; }
+
+.catalog-list { list-style: none; margin: 0; padding: 0; }
+.catalog-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+}
+.catalog-row:last-child { border-bottom: 0; }
+.catalog-row img { width: 44px; height: 58px; object-fit: cover; border-radius: 4px; background: #eee; }
+.catalog-row .meta { flex: 1; min-width: 0; }
+.catalog-row .title { font-weight: 600; }
+.catalog-row .sub { font-size: 12px; color: #777; }
+.catalog-row .badge {
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #e6f4ea;
+  color: #1d6f36;
+}
+.catalog-row .badge.off { background: #eee; color: #777; }
+
+.empty { color: #888; font-size: 14px; padding: 12px 0; }
+
+dialog {
+  width: min(560px, 92vw);
+  border: 0;
+  border-radius: 10px;
+  padding: 20px;
+}
+dialog::backdrop { background: rgba(0, 0, 0, 0.45); }

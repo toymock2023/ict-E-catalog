@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>型錄管理 | 毓秀堂</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <header class="topbar">
+    <img class="logo" src="assets/ict-logo.png" alt="毓秀堂">
+    <h1>型錄管理</h1>
+    <button id="clear-token" type="button" class="ghost" hidden>清除 Token</button>
+  </header>
+
+  <div id="status" class="status" hidden></div>
+
+  <section id="token-screen" class="card" hidden>
+    <h2>設定 GitHub Token</h2>
+    <p class="hint">
+      這組 Token 是唯一的寫入鑰匙，只存在這台裝置的瀏覽器裡，不會傳給任何第三方。<br>
+      申請方式：GitHub → Settings → Developer settings → Personal access tokens →
+      Fine-grained tokens → Generate new token。<br>
+      Repository access 選 <code>ict-E-catalog</code>，Permissions 只需勾選
+      <strong>Contents: Read and write</strong>。
+    </p>
+    <p class="hint">
+      注意：本工具的防線是這組 Token —— 沒有它，任何人都無法修改任何型錄。
+      若需要連型錄清單都不給看，須把 repo 設為 Private（需 GitHub 付費方案）或改為只在本機開啟後台。
+    </p>
+    <input id="token-input" type="password" placeholder="github_pat_..." autocomplete="off">
+    <button id="save-token" type="button" class="primary">儲存並連線</button>
+  </section>
+
+  <main id="main-screen" hidden>
+    <section class="card">
+      <h2>新增型錄</h2>
+      <form id="new-catalog-form">
+        <label for="new-title">型錄名稱</label>
+        <input id="new-title" type="text" required maxlength="60" placeholder="例如：2026 秋冬新品">
+        <label for="new-files">選擇圖片（可多選，順序即翻頁順序）</label>
+        <input id="new-files" type="file" accept="image/*" multiple required>
+        <button type="submit" class="primary">建立型錄</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>所有型錄</h2>
+      <ul id="catalog-list" class="catalog-list"></ul>
+    </section>
+  </main>
+
+  <dialog id="detail"></dialog>
+
+  <script type="module" src="admin.js"></script>
+</body>
+</html>
