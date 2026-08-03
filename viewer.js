@@ -1,3 +1,5 @@
+import { attachZoom } from './zoom.js';
+
 const MESSAGES = {
   notFound: '找不到這本型錄',
   inactive: '本型錄已結束',
@@ -84,6 +86,7 @@ function renderPages(catalog) {
   });
 
   updateCounter();
+  attachZoom(pagesEl);
   document.dispatchEvent(new CustomEvent('viewer:ready', { detail: { pagesEl } }));
 }
 
