@@ -6,7 +6,12 @@ import { createGitHubClient } from '../lib/github.js';
 function stubFetch(responses) {
   const calls = [];
   const impl = async (url, options = {}) => {
-    calls.push({ url, method: options.method || 'GET', body: options.body ? JSON.parse(options.body) : null });
+    calls.push({
+      url,
+      method: options.method || 'GET',
+      body: options.body ? JSON.parse(options.body) : null,
+      headers: options.headers || {}
+    });
     const next = responses.shift();
     if (!next) throw new Error(`沒有預期到的請求：${options.method} ${url}`);
     return {
@@ -36,8 +41,33 @@ test('請求帶上 Authorization 與 API 版本標頭', async () => {
     { status: 200, body: { tree: { sha: 'tree1' } } },
   ]);
   await makeClient(fetchImpl).getHead();
-  const headers = fetchImpl.calls.length;
-  assert.equal(headers, 2);
+  assert.equal(fetchImpl.calls.length, 2, '應該發出 2 個請求');
+
+  // 驗證第一個請求的標頭
+  const firstCallHeaders = fetchImpl.calls[0].headers;
+  assert.equal(
+    firstCallHeaders.Authorization,
+    'Bearer test-token',
+    '第一個請求應該帶上 Authorization 標頭'
+  );
+  assert.equal(
+    firstCallHeaders['X-GitHub-Api-Version'],
+    '2022-11-28',
+    '第一個請求應該帶上 X-GitHub-Api-Version 標頭'
+  );
+
+  // 驗證第二個請求的標頭
+  const secondCallHeaders = fetchImpl.calls[1].headers;
+  assert.equal(
+    secondCallHeaders.Authorization,
+    'Bearer test-token',
+    '第二個請求應該帶上 Authorization 標頭'
+  );
+  assert.equal(
+    secondCallHeaders['X-GitHub-Api-Version'],
+    '2022-11-28',
+    '第二個請求應該帶上 X-GitHub-Api-Version 標頭'
+  );
 });
 
 test('getHead 回傳目前的 commit 與 tree sha', async () => {
