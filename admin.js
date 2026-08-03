@@ -104,6 +104,11 @@ function formatTime(iso) {
 async function connect() {
   showStatus('連線中…', 'info');
   try {
+    // 先打 getHead()：即使 repo 是 public、任何合法 token 都能讀到 index.json，
+    // 真正需要驗證的是 token 對「這個」repo/branch 有沒有存取權。getHead 打的
+    // /git/ref 與 /git/commits 會在 repo/branch 不對時丟出已翻譯過的 404 錯誤，
+    // 比等到第一次上傳失敗才發現快得多。
+    await getClient().getHead();
     await loadIndex();
     el.tokenScreen.hidden = true;
     el.mainScreen.hidden = false;
@@ -367,7 +372,6 @@ function renderDetail() {
 }
 
 function wireDetail() {
-  renderQr(detail.querySelector('#qr'), catalogUrl(editing.id));
   detail.querySelector('#do-copy').addEventListener('click', () => guard(() => copyText(catalogUrl(editing.id))));
   detail.querySelector('#do-qr').addEventListener('click', () => {
     downloadQr(detail.querySelector('#qr'), `型錄-${editing.title}-QR.png`);
@@ -450,14 +454,31 @@ function wireDetail() {
       });
     }));
   }
+
+  // 放在最後才呼叫：QR 產生失敗不能連帶讓上面所有按鈕都沒接上監聽器。
+  try {
+    renderQr(detail.querySelector('#qr'), catalogUrl(editing.id));
+  } catch (err) {
+    showStatus('QR Code 產生失敗，其他功能仍可正常使用', 'error');
+  }
 }
 
-/** 統一處理管理操作的錯誤，避免每個按鈕都寫一次 try/catch。 */
+let busy = false;
+
+/** 統一處理管理操作的錯誤，避免每個按鈕都寫一次 try/catch。
+ *  同時兼作忙碌鎖：避免連續點擊造成同一份 editing 物件重疊送出兩次 commit。 */
 async function guard(fn) {
+  if (busy) {
+    showStatus('處理中，請稍候…', 'info');
+    return;
+  }
+  busy = true;
   try {
     await fn();
   } catch (err) {
     showStatus(err.message, 'error');
+  } finally {
+    busy = false;
   }
 }
 

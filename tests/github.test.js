@@ -89,6 +89,13 @@ test('403 轉譯成權限不足訊息', async () => {
   await assert.rejects(() => makeClient(fetchImpl).getHead(), /權限不足/);
 });
 
+test('fetchImpl 拋出例外（斷線）時翻譯成中文重試訊息', async () => {
+  const fetchImpl = async () => {
+    throw new TypeError('Failed to fetch');
+  };
+  await assert.rejects(() => makeClient(fetchImpl).getHead(), /上傳未完成，請重試/);
+});
+
 test('readJson 遇到 404 回傳 null 而非丟錯', async () => {
   const fetchImpl = stubFetch([{ status: 404, body: { message: 'Not Found' } }]);
   const result = await makeClient(fetchImpl).readJson('data/index.json');
