@@ -243,12 +243,10 @@ newForm.addEventListener('submit', async (event) => {
     if (!title) throw new Error('請輸入型錄名稱');
 
     const { accepted, rejected } = validateFiles([...newFiles.files]);
-    if (rejected.length > 0) {
-      showStatus(`以下檔案被略過：${rejected.join('、')}`, 'error');
-    }
+    const rejectedNote = rejected.length > 0 ? `已略過：${rejected.join('、')}｜` : '';
     if (accepted.length === 0) throw new Error('沒有可用的圖片');
 
-    showStatus('壓縮圖片中…', 'info');
+    showStatus(`${rejectedNote}壓縮圖片中…`, 'info');
     const id = generateId(state.index.catalogs.map((c) => c.id));
 
     let catalog = createCatalog({ id, title });
@@ -269,7 +267,7 @@ newForm.addEventListener('submit', async (event) => {
       upserts.push({ path: origPath, base64: await blobToBase64(file) });
       images.push({ src: srcPath, orig: origPath, w: width, h: height });
 
-      showStatus(`壓縮圖片中… ${i + 1} / ${accepted.length}`, 'info');
+      showStatus(`${rejectedNote}壓縮圖片中… ${i + 1} / ${accepted.length}`, 'info');
     }
 
     catalog = addImages(catalog, images);
@@ -282,7 +280,7 @@ newForm.addEventListener('submit', async (event) => {
     renderList();
     newForm.reset();
     showStatus(
-      `已送出。GitHub Pages 部署中，約 30～60 秒後生效：${catalogUrl(id)}`,
+      `${rejectedNote}已送出。GitHub Pages 部署中，約 30～60 秒後生效：${catalogUrl(id)}`,
       'success',
     );
   } catch (err) {
