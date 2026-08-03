@@ -1,0 +1,120 @@
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #1a1a1a;
+  color: #e8e8e8;
+  font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  overscroll-behavior: none;
+}
+
+/* 翻頁的核心：由瀏覽器排版引擎負責吸附，滑到一半放手會自動補完到最近一張，
+   物理上不可能停在兩張中間。 */
+.pages {
+  display: flex;
+  height: 100vh; /* fallback：LINE 內建瀏覽器等舊 webview 對 dvh 支援不穩 */
+  height: 100dvh;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.pages::-webkit-scrollbar { display: none; }
+
+.page {
+  flex: 0 0 100%;
+  margin: 0;
+  scroll-snap-align: center;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.page-img {
+  max-width: 100%;
+  max-height: 100vh;
+  max-height: 100dvh;
+  object-fit: contain;
+  transform-origin: 0 0;
+  will-change: transform;
+  user-select: none;
+  -webkit-user-drag: none;
+  /* 載入完成前先用 w/h 保留版位＋淺灰底色，弱網時不會閃一塊全黑 */
+  background: #2a2a2a;
+}
+
+.brand {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+  height: 28px;
+  opacity: 0.75;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.counter {
+  position: fixed;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  z-index: 3;
+}
+
+.nav {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 64px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 3;
+}
+.nav[hidden] { display: none; }
+.nav.prev { left: 8px; }
+.nav.next { right: 8px; }
+
+/* 手機不顯示箭頭，靠手勢即可，避免遮擋畫面 */
+@media (hover: none) and (pointer: coarse) {
+  .nav { display: none; }
+}
+
+.message {
+  display: grid;
+  place-items: center;
+  height: 100vh;
+  height: 100dvh;
+  padding: 24px;
+  text-align: center;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.retry {
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  color: #bbb;
+  font-size: 14px;
+}
+.retry button {
+  padding: 8px 18px;
+  border: 1px solid #666;
+  border-radius: 6px;
+  background: transparent;
+  color: #e8e8e8;
+  cursor: pointer;
+}
