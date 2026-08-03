@@ -1,6 +1,16 @@
 import { CONFIG } from './config.js';
 import { createGitHubClient } from './lib/github.js';
-import { createIndex } from './lib/catalog.js';
+import {
+  createIndex,
+  createCatalog,
+  takeSeq,
+  addImages,
+  syncIndexEntry,
+  imageFileName,
+} from './lib/catalog.js';
+import { calcTargetSize } from './lib/resize.js';
+import { renderShellHtml } from './lib/shell.js';
+import { generateId } from './lib/id.js';
 
 const TOKEN_KEY = 'ict-e-catalog.token';
 
@@ -126,3 +136,158 @@ if (state.token) {
 } else {
   el.tokenScreen.hidden = false;
 }
+
+/** 在瀏覽器內用 canvas 產生壓縮版。原圖不重新編碼，另外原封不動上傳。 */
+async function compressImage(file) {
+  const bitmap = await createImageBitmap(file);
+  const { width, height } = calcTargetSize(bitmap.width, bitmap.height, CONFIG.maxEdge);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bitmap, 0, 0, width, height);
+  bitmap.close();
+
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', CONFIG.jpegQuality));
+  if (!blob) throw new Error(`圖片壓縮失敗：${file.name}`);
+  return { blob, width, height };
+}
+
+async function blobToBase64(blob) {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let binary = '';
+  // 分塊處理：一次 apply 太多元素會爆掉呼叫堆疊
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
+}
+
+function textToBase64(text) {
+  const bytes = new TextEncoder().encode(text);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+// file.type 已經過 ACCEPTED_TYPES 白名單過濾，直接對應比從檔名猜測可靠
+// （檔名可能沒有副檔名，或副檔名與實際內容不符）。
+const EXT_BY_MIME = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+
+function fileExt(file) {
+  return EXT_BY_MIME[file.type] || 'jpg';
+}
+
+// 白名單而非「startsWith('image/')」：iPhone 預設拍照格式是 HEIC，
+// 多數瀏覽器的 createImageBitmap 無法解碼，會讓壓縮這一步失敗且錯誤訊息不知所云。
+// 與其讓使用者看到看不懂的失敗訊息，不如上傳前就明確擋下並說明原因。
+const ACCEPTED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+function validateFiles(files) {
+  const accepted = [];
+  const rejected = [];
+  for (const file of files) {
+    if (!ACCEPTED_TYPES.has(file.type)) {
+      rejected.push(`${file.name}（格式不支援，請先轉成 JPG / PNG / WebP 再上傳）`);
+    } else if (file.size > CONFIG.maxFileBytes) {
+      rejected.push(`${file.name}（超過 ${Math.round(CONFIG.maxFileBytes / 1024 / 1024)}MB）`);
+    } else {
+      accepted.push(file);
+    }
+  }
+  return { accepted, rejected };
+}
+
+/** 產生該型錄的 JSON 與薄殼 HTML。任何會改到標題或封面的操作都要重跑這支。 */
+function buildCatalogFiles(catalog) {
+  const html = renderShellHtml({
+    id: catalog.id,
+    title: catalog.title,
+    coverPath: catalog.images.length > 0 ? catalog.images[0].src : null,
+    siteBaseUrl: CONFIG.siteBaseUrl,
+    brand: CONFIG.brand,
+  });
+  return [
+    { path: `data/c/${catalog.id}.json`, base64: textToBase64(JSON.stringify(catalog, null, 2)) },
+    { path: `c/${catalog.id}/index.html`, base64: textToBase64(html) },
+  ];
+}
+
+function indexFile(index) {
+  return { path: 'data/index.json', base64: textToBase64(JSON.stringify(index, null, 2)) };
+}
+
+export async function commit(message, { upserts = [], deletes = [] }) {
+  const sha = await getClient().commitFiles({
+    message,
+    upserts,
+    deletes,
+    onProgress: (done, total) => showStatus(`上傳中… ${done} / ${total}`, 'info'),
+  });
+  return sha;
+}
+
+const newForm = document.getElementById('new-catalog-form');
+const newTitle = document.getElementById('new-title');
+const newFiles = document.getElementById('new-files');
+
+newForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const submitBtn = newForm.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+
+  try {
+    const title = newTitle.value.trim();
+    if (!title) throw new Error('請輸入型錄名稱');
+
+    const { accepted, rejected } = validateFiles([...newFiles.files]);
+    if (rejected.length > 0) {
+      showStatus(`以下檔案被略過：${rejected.join('、')}`, 'error');
+    }
+    if (accepted.length === 0) throw new Error('沒有可用的圖片');
+
+    showStatus('壓縮圖片中…', 'info');
+    const id = generateId(state.index.catalogs.map((c) => c.id));
+
+    let catalog = createCatalog({ id, title });
+    const taken = takeSeq(catalog, accepted.length);
+    catalog = taken.catalog;
+
+    const upserts = [];
+    const images = [];
+    for (const [i, file] of accepted.entries()) {
+      const seq = taken.seqs[i];
+      const ext = fileExt(file);
+      const { blob, width, height } = await compressImage(file);
+
+      const srcPath = `img/${id}/${imageFileName(seq, 'display', 'jpg')}`;
+      const origPath = `img/${id}/${imageFileName(seq, 'orig', ext)}`;
+
+      upserts.push({ path: srcPath, base64: await blobToBase64(blob) });
+      upserts.push({ path: origPath, base64: await blobToBase64(file) });
+      images.push({ src: srcPath, orig: origPath, w: width, h: height });
+
+      showStatus(`壓縮圖片中… ${i + 1} / ${accepted.length}`, 'info');
+    }
+
+    catalog = addImages(catalog, images);
+    const index = syncIndexEntry(state.index, catalog, new Date().toISOString());
+
+    upserts.push(...buildCatalogFiles(catalog), indexFile(index));
+    await commit(`feat: 新增型錄「${title}」`, { upserts });
+
+    state.index = index;
+    renderList();
+    newForm.reset();
+    showStatus(
+      `已送出。GitHub Pages 部署中，約 30～60 秒後生效：${catalogUrl(id)}`,
+      'success',
+    );
+  } catch (err) {
+    showStatus(err.message, 'error');
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
