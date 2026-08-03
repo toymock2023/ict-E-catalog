@@ -5,7 +5,13 @@ import {
   createCatalog,
   takeSeq,
   addImages,
+  removeImageAt,
+  reorderImages,
+  renameCatalog,
+  setActive,
   syncIndexEntry,
+  removeFromIndex,
+  catalogFilePaths,
   imageFileName,
 } from './lib/catalog.js';
 import { calcTargetSize } from './lib/resize.js';
@@ -288,4 +294,171 @@ newForm.addEventListener('submit', async (event) => {
   } finally {
     submitBtn.disabled = false;
   }
+});
+
+const detail = document.getElementById('detail');
+let editing = null; // 目前開啟的型錄物件
+
+async function loadCatalog(id) {
+  const data = await getClient().readJson(`data/c/${id}.json`);
+  if (!data) throw new Error('找不到這本型錄的資料檔');
+  return data;
+}
+
+/** 把型錄變更同步到索引並提交。所有管理操作都走這一條路徑。 */
+async function saveCatalog(catalog, message, extra = {}) {
+  const index = syncIndexEntry(state.index, catalog, new Date().toISOString());
+  const upserts = [...(extra.upserts || []), ...buildCatalogFiles(catalog), indexFile(index)];
+  await commit(message, { upserts, deletes: extra.deletes || [] });
+  state.index = index;
+  editing = catalog;
+  renderList();
+  renderDetail();
+  showStatus('已送出。GitHub Pages 部署中，約 30～60 秒後生效。', 'success');
+}
+
+function renderDetail() {
+  const url = catalogUrl(editing.id);
+  detail.innerHTML = `
+    <h2 id="detail-title"></h2>
+    <p class="hint">網址：<a href="${url}" target="_blank" rel="noopener">${url}</a></p>
+
+    <label for="edit-title">型錄名稱</label>
+    <input id="edit-title" type="text" maxlength="60">
+    <button type="button" class="primary" id="do-rename">儲存名稱</button>
+
+    <label>上架狀態</label>
+    <button type="button" class="ghost" id="do-toggle">${editing.active ? '下架此型錄' : '重新上架'}</button>
+
+    <label for="add-files">補上新圖片</label>
+    <input id="add-files" type="file" accept="image/*" multiple>
+    <button type="button" class="primary" id="do-add">上傳新圖片</button>
+
+    <label>圖片順序</label>
+    <ul id="image-list" class="catalog-list"></ul>
+
+    <hr>
+    <button type="button" class="danger" id="do-delete">永久刪除整本型錄</button>
+    <button type="button" class="ghost" id="do-close">關閉</button>
+  `;
+  detail.querySelector('#detail-title').textContent = editing.title;
+  detail.querySelector('#edit-title').value = editing.title;
+
+  const list = detail.querySelector('#image-list');
+  editing.images.forEach((image, i) => {
+    const li = document.createElement('li');
+    li.className = 'catalog-row';
+    li.innerHTML = `
+      <img src="${image.src}" alt="">
+      <div class="meta"><div class="sub">第 ${i + 1} 張</div></div>
+      <button type="button" class="ghost" data-up="${i}" ${i === 0 ? 'disabled' : ''}>上移</button>
+      <button type="button" class="ghost" data-down="${i}" ${i === editing.images.length - 1 ? 'disabled' : ''}>下移</button>
+      <button type="button" class="danger" data-remove="${i}">刪除</button>
+    `;
+    list.appendChild(li);
+  });
+
+  wireDetail();
+}
+
+function wireDetail() {
+  detail.querySelector('#do-close').addEventListener('click', () => detail.close());
+
+  detail.querySelector('#do-rename').addEventListener('click', () => guard(async () => {
+    const title = detail.querySelector('#edit-title').value.trim();
+    if (!title) throw new Error('請輸入型錄名稱');
+    await saveCatalog(renameCatalog(editing, title), `feat: 型錄改名為「${title}」`);
+  }));
+
+  detail.querySelector('#do-toggle').addEventListener('click', () => guard(async () => {
+    const next = setActive(editing, !editing.active);
+    await saveCatalog(next, `feat: ${next.active ? '上架' : '下架'}型錄「${next.title}」`);
+  }));
+
+  detail.querySelector('#do-add').addEventListener('click', () => guard(async () => {
+    const input = detail.querySelector('#add-files');
+    const { accepted, rejected } = validateFiles([...input.files]);
+    const rejectedNote = rejected.length > 0 ? `已略過：${rejected.join('、')}｜` : '';
+    if (accepted.length === 0) throw new Error(`${rejectedNote}沒有可用的圖片`);
+
+    showStatus(`${rejectedNote}壓縮圖片中…`, 'info');
+    const taken = takeSeq(editing, accepted.length);
+    let catalog = taken.catalog;
+
+    const upserts = [];
+    const images = [];
+    for (const [i, file] of accepted.entries()) {
+      const seq = taken.seqs[i];
+      const ext = fileExt(file);
+      const { blob, width, height } = await compressImage(file);
+      const srcPath = `img/${catalog.id}/${imageFileName(seq, 'display', 'jpg')}`;
+      const origPath = `img/${catalog.id}/${imageFileName(seq, 'orig', ext)}`;
+      upserts.push({ path: srcPath, base64: await blobToBase64(blob) });
+      upserts.push({ path: origPath, base64: await blobToBase64(file) });
+      images.push({ src: srcPath, orig: origPath, w: width, h: height });
+    }
+
+    catalog = addImages(catalog, images);
+    input.value = '';
+    await saveCatalog(catalog, `feat: 型錄「${catalog.title}」新增 ${images.length} 張圖片`, { upserts });
+  }));
+
+  detail.querySelector('#do-delete').addEventListener('click', () => guard(async () => {
+    if (!confirm(`確定要永久刪除「${editing.title}」嗎？此動作無法復原，已發出去的連結會失效。`)) return;
+    const index = removeFromIndex(state.index, editing.id);
+    await commit(`feat: 刪除型錄「${editing.title}」`, {
+      upserts: [indexFile(index)],
+      deletes: catalogFilePaths(editing),
+    });
+    state.index = index;
+    editing = null;
+    detail.close();
+    renderList();
+    showStatus('已送出刪除。GitHub Pages 部署中，約 30～60 秒後生效。', 'success');
+  }));
+
+  for (const btn of detail.querySelectorAll('[data-up]')) {
+    btn.addEventListener('click', () => guard(async () => {
+      const i = Number(btn.dataset.up);
+      await saveCatalog(reorderImages(editing, i, i - 1), `feat: 調整型錄「${editing.title}」圖片順序`);
+    }));
+  }
+  for (const btn of detail.querySelectorAll('[data-down]')) {
+    btn.addEventListener('click', () => guard(async () => {
+      const i = Number(btn.dataset.down);
+      await saveCatalog(reorderImages(editing, i, i + 1), `feat: 調整型錄「${editing.title}」圖片順序`);
+    }));
+  }
+  for (const btn of detail.querySelectorAll('[data-remove]')) {
+    btn.addEventListener('click', () => guard(async () => {
+      const i = Number(btn.dataset.remove);
+      const image = editing.images[i];
+      if (!confirm(`確定要刪除第 ${i + 1} 張圖片嗎？`)) return;
+      await saveCatalog(removeImageAt(editing, i), `feat: 型錄「${editing.title}」刪除第 ${i + 1} 張圖片`, {
+        deletes: [image.src, image.orig],
+      });
+    }));
+  }
+}
+
+/** 統一處理管理操作的錯誤，避免每個按鈕都寫一次 try/catch。 */
+async function guard(fn) {
+  try {
+    await fn();
+  } catch (err) {
+    showStatus(err.message, 'error');
+  }
+}
+
+export async function openDetail(id) {
+  await guard(async () => {
+    editing = await loadCatalog(id);
+    renderDetail();
+    detail.showModal();
+  });
+}
+
+document.getElementById('catalog-list').addEventListener('click', (event) => {
+  const id = event.target.dataset?.open;
+  if (id) openDetail(id);
 });
