@@ -244,7 +244,7 @@ newForm.addEventListener('submit', async (event) => {
 
     const { accepted, rejected } = validateFiles([...newFiles.files]);
     const rejectedNote = rejected.length > 0 ? `已略過：${rejected.join('、')}｜` : '';
-    if (accepted.length === 0) throw new Error('沒有可用的圖片');
+    if (accepted.length === 0) throw new Error(`${rejectedNote}沒有可用的圖片`);
 
     showStatus(`${rejectedNote}壓縮圖片中…`, 'info');
     const id = generateId(state.index.catalogs.map((c) => c.id));
