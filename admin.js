@@ -322,6 +322,11 @@ function renderDetail() {
   detail.innerHTML = `
     <h2 id="detail-title"></h2>
     <p class="hint">網址：<a href="${url}" target="_blank" rel="noopener">${url}</a></p>
+    <div>
+      <canvas id="qr" style="width:180px;height:180px;image-rendering:pixelated"></canvas>
+    </div>
+    <button type="button" class="ghost" id="do-copy">複製連結</button>
+    <button type="button" class="ghost" id="do-qr">下載 QR PNG</button>
 
     <label for="edit-title">型錄名稱</label>
     <input id="edit-title" type="text" maxlength="60">
@@ -362,6 +367,12 @@ function renderDetail() {
 }
 
 function wireDetail() {
+  renderQr(detail.querySelector('#qr'), catalogUrl(editing.id));
+  detail.querySelector('#do-copy').addEventListener('click', () => guard(() => copyText(catalogUrl(editing.id))));
+  detail.querySelector('#do-qr').addEventListener('click', () => {
+    downloadQr(detail.querySelector('#qr'), `型錄-${editing.title}-QR.png`);
+  });
+
   detail.querySelector('#do-close').addEventListener('click', () => detail.close());
 
   detail.querySelector('#do-rename').addEventListener('click', () => guard(async () => {
@@ -462,3 +473,45 @@ document.getElementById('catalog-list').addEventListener('click', (event) => {
   const id = event.target.dataset?.open;
   if (id) openDetail(id);
 });
+
+const QR_CELL = 6; // 每個 QR 模組的像素大小
+const QR_MARGIN = 4; // 靜區，單位為模組數，低於 4 會影響掃描率
+
+function renderQr(canvas, text) {
+  const qr = qrcode(0, 'M'); // 0 = 自動選版本，M = 中度容錯
+  qr.addData(text);
+  qr.make();
+
+  const count = qr.getModuleCount();
+  const size = (count + QR_MARGIN * 2) * QR_CELL;
+  canvas.width = size;
+  canvas.height = size;
+
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#000000';
+  for (let row = 0; row < count; row += 1) {
+    for (let col = 0; col < count; col += 1) {
+      if (qr.isDark(row, col)) {
+        ctx.fillRect((col + QR_MARGIN) * QR_CELL, (row + QR_MARGIN) * QR_CELL, QR_CELL, QR_CELL);
+      }
+    }
+  }
+}
+
+function downloadQr(canvas, filename) {
+  canvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, 'image/png');
+}
+
+async function copyText(text) {
+  await navigator.clipboard.writeText(text);
+  showStatus('連結已複製', 'success');
+}
