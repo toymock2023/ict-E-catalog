@@ -22,7 +22,10 @@ body {
 body[data-bg="light"] {
   --bg: #fff;
   --fg: #222;
-  --placeholder-bg: #eee;
+  /* 跟深色模式的 #2a2a2a 相對 #1a1a1a 一樣，故意跟 --bg 幾乎同色：
+     圖片框在某些瀏覽器不會被 object-fit:contain 完全填滿，
+     殘留的縫隙會露出這個底色 —— 太亮或太暗都會變成一塊明顯的色塊。 */
+  --placeholder-bg: #fdfdfd;
   --muted: #777;
   --border: #bbb;
 }
