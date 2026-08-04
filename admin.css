@@ -98,3 +98,11 @@ dialog {
   padding: 20px;
 }
 dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+
+/* dialog 內容常比視窗高，靠 dialog 自己捲動；狀態列要黏在捲動區頂端，
+   不然使用者捲到下面按「上傳新圖片」時，訊息會跟著捲出畫面看不到。 */
+dialog #dialog-status {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
