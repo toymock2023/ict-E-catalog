@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "id": "36bf43",
+  "title": "公司簡介",
+  "active": true,
+  "nextSeq": 2,
+  "images": [
+    {
+      "src": "img/36bf43/01.jpg",
+      "orig": "img/36bf43/01.orig.jpg",
+      "w": 1040,
+      "h": 1387
+    }
+  ]
+}
