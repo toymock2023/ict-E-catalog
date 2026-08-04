@@ -3,7 +3,7 @@
   "id": "36bf43",
   "title": "公司簡介",
   "active": true,
-  "nextSeq": 5,
+  "nextSeq": 7,
   "images": [
     {
       "src": "img/36bf43/01.jpg",
@@ -28,6 +28,18 @@
       "orig": "img/36bf43/04.orig.png",
       "w": 577,
       "h": 750
+    },
+    {
+      "src": "img/36bf43/05.jpg",
+      "orig": "img/36bf43/05.orig.jpg",
+      "w": 800,
+      "h": 800
+    },
+    {
+      "src": "img/36bf43/06.jpg",
+      "orig": "img/36bf43/06.orig.jpg",
+      "w": 599,
+      "h": 800
     }
   ],
   "bg": "light"
