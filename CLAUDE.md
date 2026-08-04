@@ -55,6 +55,12 @@ OG meta 必須寫死在 HTML 裡 —— LINE 與 Facebook 的預覽爬蟲不執�
 
 `zoom.js` 在放大時必須做三件事：關掉 snap、鎖住橫向捲動、把 `touch-action` 設為 `none`。少任何一件，使用者想拖曳放大的圖就會變成翻頁。純數學部分在 `lib/zoommath.js`，有測試覆蓋。
 
+`.page-img` 的 `background`（`--placeholder-bg`，圖片載入前／`object-fit: contain` 沒完全填滿框時的底色）**顏色必須貼近同色系的 `--bg`**，不能選一個「看起來協調但有落差」的顏色。深色模式的 `#2a2a2a` 跟 `#1a1a1a` 幾乎沒差所以不明顯；淺色模式一開始選的 `#eee` 在部分瀏覽器上會因為圖片沒貼滿框而露出縫隙，對比純白背景 `#fff` 就變成一塊明顯的灰塊，後來改成 `#fdfdfd` 才解決。
+
+### 後台的 `<dialog>`
+
+管理型錄用的 `<dialog>` 內容常比視窗高，捲動由 `<dialog>` 元素自己負責（不是外層 `body`）。狀態列 `#dialog-status` 必須用 `position: sticky` 貼在這個捲動區頂端——不然使用者捲到下面點「上傳新圖片」時，進度訊息會跟著內容捲出畫面看不到。同理，`showStatus()`/`clearStatus()` 除了更新最外層的全域 `#status`，也要同步寫進 `#dialog-status`：dialog 開啟時屬於瀏覽器 top layer，會蓋住頁面其餘內容，只更新全域 `#status` 使用者根本看不到。
+
 ### `lib/` 的規矩
 
 `lib/` 內的模組不碰 DOM、不直接呼叫 `fetch`（`github.js` 以注入方式接收 `fetch`），所以能在 Node 中直接測試。新的商業邏輯盡量放這裡。
