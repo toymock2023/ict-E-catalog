@@ -3,10 +3,28 @@
 html, body {
   margin: 0;
   height: 100%;
-  background: #1a1a1a;
-  color: #e8e8e8;
+}
+
+body {
+  --bg: #1a1a1a;
+  --fg: #e8e8e8;
+  --placeholder-bg: #2a2a2a;
+  --muted: #bbb;
+  --border: #666;
+  background: var(--bg);
+  color: var(--fg);
   font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
   overscroll-behavior: none;
+}
+
+/* 型錄可在後台切換瀏覽頁背景；data-bg 直接寫死在薄殼 HTML 裡，
+   所以切換到淺色時，第一次繪製就是正確顏色，不會先閃一下深色再變白。 */
+body[data-bg="light"] {
+  --bg: #f6f6f4;
+  --fg: #222;
+  --placeholder-bg: #e6e6e3;
+  --muted: #777;
+  --border: #bbb;
 }
 
 /* 翻頁的核心：由瀏覽器排版引擎負責吸附，滑到一半放手會自動補完到最近一張，
@@ -41,8 +59,8 @@ html, body {
   will-change: transform;
   user-select: none;
   -webkit-user-drag: none;
-  /* 載入完成前先用 w/h 保留版位＋淺灰底色，弱網時不會閃一塊全黑 */
-  background: #2a2a2a;
+  /* 載入完成前先用 w/h 保留版位＋底色，弱網時不會閃一塊突兀的顏色 */
+  background: var(--placeholder-bg);
 }
 
 .brand {
@@ -107,14 +125,14 @@ html, body {
   display: grid;
   place-items: center;
   gap: 12px;
-  color: #bbb;
+  color: var(--muted);
   font-size: 14px;
 }
 .retry button {
   padding: 8px 18px;
-  border: 1px solid #666;
+  border: 1px solid var(--border);
   border-radius: 6px;
   background: transparent;
-  color: #e8e8e8;
+  color: var(--fg);
   cursor: pointer;
 }

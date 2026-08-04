@@ -9,6 +9,7 @@ import {
   reorderImages,
   renameCatalog,
   setActive,
+  setBackground,
   syncIndexEntry,
   removeFromIndex,
   catalogFilePaths,
@@ -43,7 +44,17 @@ test('createCatalog 產生的型錄預設上架、無圖、序號從 1 起算', 
   assert.equal(cat.title, '2026 秋冬新品');
   assert.equal(cat.active, true);
   assert.equal(cat.nextSeq, 1);
+  assert.equal(cat.bg, 'dark');
   assert.deepEqual(cat.images, []);
+});
+
+test('setBackground 只改 bg 欄位，且拒絕不支援的值', () => {
+  const cat = catalogWithImages(1);
+  const light = setBackground(cat, 'light');
+  assert.equal(light.bg, 'light');
+  assert.equal(light.images.length, 1);
+  assert.equal(cat.bg, 'dark', '原物件不可被修改');
+  assert.throws(() => setBackground(cat, 'blue'), /不支援的背景顏色/);
 });
 
 test('takeSeq 取號後計數器前進，且不修改原物件', () => {

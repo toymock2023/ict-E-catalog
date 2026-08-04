@@ -47,6 +47,8 @@ python -m http.server 8789 --directory ict-E-catalog
 
 OG meta 必須寫死在 HTML 裡 —— LINE 與 Facebook 的預覽爬蟲不執行 JavaScript。這是選擇「每本一個實體 HTML 檔」而非「單一頁面 + 網址參數」的原因。
 
+瀏覽頁背景（黑／白，`body[data-bg]`）也是同樣道理寫死在薄殼 HTML 裡，而不是讓 `viewer.js` 抓到型錄 JSON 後才動態套用 —— 否則淺色型錄會先閃一下預設的黑底再變白。
+
 ### 翻頁與縮放
 
 翻頁用 CSS `scroll-snap-type: x mandatory` + `scroll-snap-align: center`，吸附由瀏覽器排版引擎負責。**不要換成 JS 手寫的翻頁**，慣性手感會明顯變差。

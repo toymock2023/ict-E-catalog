@@ -54,3 +54,13 @@ test('資源路徑相對於 /c/<id>/ 往上兩層', () => {
   assert.match(html, /href="\.\.\/\.\.\/viewer\.css"/);
   assert.match(html, /src="\.\.\/\.\.\/viewer\.js"/);
 });
+
+test('未指定 bg 時預設輸出 data-bg="dark"', () => {
+  const html = renderShellHtml(base);
+  assert.match(html, /data-bg="dark"/);
+});
+
+test('bg 傳入 light 時輸出 data-bg="light"', () => {
+  const html = renderShellHtml({ ...base, bg: 'light' });
+  assert.match(html, /data-bg="light"/);
+});

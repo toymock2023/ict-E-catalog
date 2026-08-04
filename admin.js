@@ -9,6 +9,7 @@ import {
   reorderImages,
   renameCatalog,
   setActive,
+  setBackground,
   syncIndexEntry,
   removeFromIndex,
   catalogFilePaths,
@@ -52,10 +53,21 @@ export function showStatus(text, kind = 'info') {
   el.status.textContent = text;
   el.status.className = `status ${kind}`;
   el.status.hidden = false;
+
+  // #status 位在 <dialog> 之外；dialog 開啟時屬於瀏覽器 top layer，會蓋住頁面其餘內容，
+  // 讓 #status 的更新看不到。dialog 開啟期間改在 dialog 內同步顯示一份。
+  const dialogStatus = document.getElementById('dialog-status');
+  if (dialogStatus) {
+    dialogStatus.textContent = text;
+    dialogStatus.className = `status ${kind}`;
+    dialogStatus.hidden = false;
+  }
 }
 
 export function clearStatus() {
   el.status.hidden = true;
+  const dialogStatus = document.getElementById('dialog-status');
+  if (dialogStatus) dialogStatus.hidden = true;
 }
 
 export async function loadIndex() {
@@ -219,6 +231,7 @@ function buildCatalogFiles(catalog) {
     coverPath: catalog.images.length > 0 ? catalog.images[0].src : null,
     siteBaseUrl: CONFIG.siteBaseUrl,
     brand: CONFIG.brand,
+    bg: catalog.bg || 'dark',
   });
   return [
     { path: `data/c/${catalog.id}.json`, base64: textToBase64(JSON.stringify(catalog, null, 2)) },
@@ -324,8 +337,10 @@ async function saveCatalog(catalog, message, extra = {}) {
 
 function renderDetail() {
   const url = catalogUrl(editing.id);
+  const bg = editing.bg || 'dark';
   detail.innerHTML = `
     <h2 id="detail-title"></h2>
+    <div id="dialog-status" class="status" hidden></div>
     <p class="hint">網址：<a href="${url}" target="_blank" rel="noopener">${url}</a></p>
     <div>
       <canvas id="qr" style="width:180px;height:180px;image-rendering:pixelated"></canvas>
@@ -339,6 +354,9 @@ function renderDetail() {
 
     <label>上架狀態</label>
     <button type="button" class="ghost" id="do-toggle">${editing.active ? '下架此型錄' : '重新上架'}</button>
+
+    <label>瀏覽頁背景顏色</label>
+    <button type="button" class="ghost" id="do-bg-toggle">${bg === 'light' ? '切換為黑色背景' : '切換為白色背景'}</button>
 
     <label for="add-files">補上新圖片</label>
     <input id="add-files" type="file" accept="image/*" multiple>
@@ -388,6 +406,11 @@ function wireDetail() {
   detail.querySelector('#do-toggle').addEventListener('click', () => guard(async () => {
     const next = setActive(editing, !editing.active);
     await saveCatalog(next, `feat: ${next.active ? '上架' : '下架'}型錄「${next.title}」`);
+  }));
+
+  detail.querySelector('#do-bg-toggle').addEventListener('click', () => guard(async () => {
+    const next = setBackground(editing, (editing.bg || 'dark') === 'light' ? 'dark' : 'light');
+    await saveCatalog(next, `feat: 型錄「${next.title}」背景改為${next.bg === 'light' ? '白色' : '黑色'}`);
   }));
 
   detail.querySelector('#do-add').addEventListener('click', () => guard(async () => {
