@@ -356,7 +356,10 @@ function renderDetail() {
     <button type="button" class="ghost" id="do-toggle">${editing.active ? '下架此型錄' : '重新上架'}</button>
 
     <label>瀏覽頁背景顏色</label>
-    <button type="button" class="ghost" id="do-bg-toggle">${bg === 'light' ? '切換為黑色背景' : '切換為白色背景'}</button>
+    <div class="bg-swatches" role="group" aria-label="瀏覽頁背景顏色">
+      <button type="button" class="bg-swatch" data-bg="light" title="白色" aria-pressed="${bg === 'light'}"></button>
+      <button type="button" class="bg-swatch" data-bg="dark" title="黑色" aria-pressed="${bg === 'dark'}"></button>
+    </div>
 
     <label for="add-files">補上新圖片</label>
     <input id="add-files" type="file" accept="image/*" multiple>
@@ -408,10 +411,14 @@ function wireDetail() {
     await saveCatalog(next, `feat: ${next.active ? '上架' : '下架'}型錄「${next.title}」`);
   }));
 
-  detail.querySelector('#do-bg-toggle').addEventListener('click', () => guard(async () => {
-    const next = setBackground(editing, (editing.bg || 'dark') === 'light' ? 'dark' : 'light');
-    await saveCatalog(next, `feat: 型錄「${next.title}」背景改為${next.bg === 'light' ? '白色' : '黑色'}`);
-  }));
+  for (const swatch of detail.querySelectorAll('.bg-swatch')) {
+    swatch.addEventListener('click', () => guard(async () => {
+      const nextBg = swatch.dataset.bg;
+      if (nextBg === (editing.bg || 'dark')) return;
+      const next = setBackground(editing, nextBg);
+      await saveCatalog(next, `feat: 型錄「${next.title}」背景改為${next.bg === 'light' ? '白色' : '黑色'}`);
+    }));
+  }
 
   detail.querySelector('#do-add').addEventListener('click', () => guard(async () => {
     const input = detail.querySelector('#add-files');

@@ -67,6 +67,33 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .status.success { background: #e6f4ea; color: #1d6f36; }
 .status.error { background: #fdecec; color: #a12020; }
 
+.bg-swatches { display: flex; gap: 12px; margin-top: 4px; }
+.bg-swatch {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 2px solid #ccc;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+}
+.bg-swatch[data-bg="light"] { background: #fff; }
+.bg-swatch[data-bg="dark"] { background: #1a1a1a; }
+.bg-swatch[aria-pressed="true"] {
+  border-color: #2b6cb0;
+  box-shadow: 0 0 0 2px rgba(43, 108, 176, 0.25);
+}
+.bg-swatch[aria-pressed="true"]::after {
+  content: "\2713";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  color: #2b6cb0;
+}
+.bg-swatch[data-bg="dark"][aria-pressed="true"]::after { color: #fff; }
+
 .catalog-list { list-style: none; margin: 0; padding: 0; }
 .catalog-row {
   display: flex;
