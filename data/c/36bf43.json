@@ -3,13 +3,31 @@
   "id": "36bf43",
   "title": "公司簡介",
   "active": true,
-  "nextSeq": 2,
+  "nextSeq": 5,
   "images": [
     {
       "src": "img/36bf43/01.jpg",
       "orig": "img/36bf43/01.orig.jpg",
       "w": 1040,
       "h": 1387
+    },
+    {
+      "src": "img/36bf43/02.jpg",
+      "orig": "img/36bf43/02.orig.jpg",
+      "w": 750,
+      "h": 750
+    },
+    {
+      "src": "img/36bf43/03.jpg",
+      "orig": "img/36bf43/03.orig.png",
+      "w": 536,
+      "h": 750
+    },
+    {
+      "src": "img/36bf43/04.jpg",
+      "orig": "img/36bf43/04.orig.png",
+      "w": 577,
+      "h": 750
     }
   ]
 }
