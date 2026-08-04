@@ -20,9 +20,9 @@ body {
 /* 型錄可在後台切換瀏覽頁背景；data-bg 直接寫死在薄殼 HTML 裡，
    所以切換到淺色時，第一次繪製就是正確顏色，不會先閃一下深色再變白。 */
 body[data-bg="light"] {
-  --bg: #f6f6f4;
+  --bg: #fff;
   --fg: #222;
-  --placeholder-bg: #e6e6e3;
+  --placeholder-bg: #eee;
   --muted: #777;
   --border: #bbb;
 }
