@@ -3,7 +3,7 @@
   "id": "36bf43",
   "title": "公司簡介",
   "active": true,
-  "nextSeq": 7,
+  "nextSeq": 15,
   "images": [
     {
       "src": "img/36bf43/03.jpg",
@@ -28,6 +28,54 @@
       "orig": "img/36bf43/06.orig.jpg",
       "w": 599,
       "h": 800
+    },
+    {
+      "src": "img/36bf43/07.jpg",
+      "orig": "img/36bf43/07.orig.jpg",
+      "w": 1040,
+      "h": 1387
+    },
+    {
+      "src": "img/36bf43/08.jpg",
+      "orig": "img/36bf43/08.orig.jpg",
+      "w": 1040,
+      "h": 1387
+    },
+    {
+      "src": "img/36bf43/09.jpg",
+      "orig": "img/36bf43/09.orig.jpg",
+      "w": 1040,
+      "h": 1387
+    },
+    {
+      "src": "img/36bf43/10.jpg",
+      "orig": "img/36bf43/10.orig.jpg",
+      "w": 1040,
+      "h": 1387
+    },
+    {
+      "src": "img/36bf43/11.jpg",
+      "orig": "img/36bf43/11.orig.jpg",
+      "w": 1040,
+      "h": 1387
+    },
+    {
+      "src": "img/36bf43/12.jpg",
+      "orig": "img/36bf43/12.orig.jpg",
+      "w": 1040,
+      "h": 1387
+    },
+    {
+      "src": "img/36bf43/13.jpg",
+      "orig": "img/36bf43/13.orig.jpg",
+      "w": 1040,
+      "h": 1387
+    },
+    {
+      "src": "img/36bf43/14.jpg",
+      "orig": "img/36bf43/14.orig.jpg",
+      "w": 1040,
+      "h": 1387
     }
   ],
   "bg": "light"
