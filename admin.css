@@ -104,6 +104,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 .catalog-row:last-child { border-bottom: 0; }
 .catalog-row img { width: 44px; height: 58px; object-fit: cover; border-radius: 4px; background: #eee; }
+.catalog-row input[type="checkbox"] { flex-shrink: 0; width: 18px; height: 18px; }
 .catalog-row .meta { flex: 1; min-width: 0; }
 .catalog-row .title { font-weight: 600; }
 .catalog-row .sub { font-size: 12px; color: #777; }
@@ -117,6 +118,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .catalog-row .badge.off { background: #eee; color: #777; }
 
 .empty { color: #888; font-size: 14px; padding: 12px 0; }
+
+.bulk-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 8px; }
+.bulk-actions .select-all { display: flex; align-items: center; gap: 6px; margin: 0; font-weight: 400; font-size: 14px; }
+.bulk-actions .select-all input { width: 18px; height: 18px; }
 
 dialog {
   width: min(560px, 92vw);

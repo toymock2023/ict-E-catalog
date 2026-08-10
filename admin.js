@@ -6,6 +6,7 @@ import {
   takeSeq,
   addImages,
   removeImageAt,
+  removeImagesAt,
   reorderImages,
   renameCatalog,
   setActive,
@@ -366,6 +367,10 @@ function renderDetail() {
     <button type="button" class="primary" id="do-add">上傳新圖片</button>
 
     <label>圖片順序</label>
+    <div class="bulk-actions">
+      <label class="select-all"><input type="checkbox" id="select-all-images"> 全選</label>
+      <button type="button" class="danger" id="do-remove-selected" disabled>刪除選取的圖片</button>
+    </div>
     <ul id="image-list" class="catalog-list"></ul>
 
     <hr>
@@ -380,6 +385,7 @@ function renderDetail() {
     const li = document.createElement('li');
     li.className = 'catalog-row';
     li.innerHTML = `
+      <input type="checkbox" class="image-select" data-select="${i}">
       <img src="${image.src}" alt="">
       <div class="meta"><div class="sub">第 ${i + 1} 張</div></div>
       <button type="button" class="ghost" data-up="${i}" ${i === 0 ? 'disabled' : ''}>上移</button>
@@ -446,6 +452,42 @@ function wireDetail() {
     catalog = addImages(catalog, images);
     input.value = '';
     await saveCatalog(catalog, `feat: 型錄「${catalog.title}」新增 ${images.length} 張圖片`, { upserts });
+  }));
+
+  const selectAll = detail.querySelector('#select-all-images');
+  const removeSelectedBtn = detail.querySelector('#do-remove-selected');
+  const checkboxes = [...detail.querySelectorAll('.image-select')];
+
+  function selectedIndexes() {
+    return checkboxes.filter((cb) => cb.checked).map((cb) => Number(cb.dataset.select));
+  }
+
+  function updateBulkUI() {
+    const count = selectedIndexes().length;
+    removeSelectedBtn.disabled = count === 0;
+    removeSelectedBtn.textContent = count > 0 ? `刪除選取的圖片（${count}）` : '刪除選取的圖片';
+    selectAll.checked = count > 0 && count === checkboxes.length;
+  }
+
+  for (const cb of checkboxes) {
+    cb.addEventListener('change', updateBulkUI);
+  }
+
+  selectAll.addEventListener('change', () => {
+    for (const cb of checkboxes) cb.checked = selectAll.checked;
+    updateBulkUI();
+  });
+
+  removeSelectedBtn.addEventListener('click', () => guard(async () => {
+    const indexes = selectedIndexes();
+    if (indexes.length === 0) return;
+    if (!confirm(`確定要刪除選取的 ${indexes.length} 張圖片嗎？`)) return;
+    const deletes = indexes.flatMap((i) => [editing.images[i].src, editing.images[i].orig]);
+    await saveCatalog(
+      removeImagesAt(editing, indexes),
+      `feat: 型錄「${editing.title}」刪除 ${indexes.length} 張圖片`,
+      { deletes },
+    );
   }));
 
   detail.querySelector('#do-delete').addEventListener('click', () => guard(async () => {

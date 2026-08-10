@@ -6,6 +6,7 @@ import {
   takeSeq,
   addImages,
   removeImageAt,
+  removeImagesAt,
   reorderImages,
   renameCatalog,
   setActive,
@@ -93,6 +94,28 @@ test('reorderImages 索引超出範圍時丟出錯誤', () => {
 test('removeImageAt 索引超出範圍時丟出錯誤', () => {
   const cat = catalogWithImages(2);
   assert.throws(() => removeImageAt(cat, 9), /索引超出範圍/);
+});
+
+test('removeImagesAt 一次移除多筆，且不受傳入順序影響', () => {
+  const cat = catalogWithImages(4); // 01,02,03,04
+  const removed = removeImagesAt(cat, [2, 0]); // 移除第 3、1 張，順序故意反過來
+  assert.deepEqual(
+    removed.images.map((img) => img.src),
+    ['img/a7f3k2/02.jpg', 'img/a7f3k2/04.jpg'],
+  );
+  assert.equal(cat.images.length, 4, '原物件不可被修改');
+});
+
+test('removeImagesAt 刪除後不讓序號倒退', () => {
+  let cat = catalogWithImages(3); // 用掉 1,2,3；nextSeq = 4
+  cat = removeImagesAt(cat, [1, 2]);
+  assert.equal(cat.images.length, 1);
+  assert.equal(cat.nextSeq, 4, '刪除不得讓序號倒退');
+});
+
+test('removeImagesAt 任一索引超出範圍時丟出錯誤，且不修改原物件', () => {
+  const cat = catalogWithImages(2);
+  assert.throws(() => removeImagesAt(cat, [0, 9]), /索引超出範圍/);
 });
 
 test('renameCatalog 與 setActive 只改對應欄位', () => {
