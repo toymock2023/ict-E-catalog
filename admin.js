@@ -317,6 +317,8 @@ newForm.addEventListener('submit', async (event) => {
 
 const detail = document.getElementById('detail');
 let editing = null; // 目前開啟的型錄物件
+let lastSavedImages = null; // 最後一次送出 commit 時的圖片順序，供「還原順序」使用
+let orderDirty = false; // 本機調整過順序但尚未按「確認順序」送出
 
 async function loadCatalog(id) {
   const data = await getClient().readJson(`data/c/${id}.json`);
@@ -331,6 +333,8 @@ async function saveCatalog(catalog, message, extra = {}) {
   await commit(message, { upserts, deletes: extra.deletes || [] });
   state.index = index;
   editing = catalog;
+  lastSavedImages = catalog.images;
+  orderDirty = false;
   renderList();
   renderDetail();
   showStatus('已送出。GitHub Pages 部署中，約 30～60 秒後生效。', 'success');
@@ -367,6 +371,14 @@ function renderDetail() {
     <button type="button" class="primary" id="do-add">上傳新圖片</button>
 
     <label>圖片順序</label>
+    <p class="hint">拖曳「⋮⋮」把手或用上移／下移調整順序，改完按「確認順序」才會送出（手機請用上移／下移）。</p>
+    <div class="order-actions">
+      <span id="order-status" class="hint">${orderDirty ? '順序尚未儲存' : ''}</span>
+      <div>
+        <button type="button" class="ghost" id="do-revert-order" ${orderDirty ? '' : 'disabled'}>還原順序</button>
+        <button type="button" class="primary" id="do-confirm-order" ${orderDirty ? '' : 'disabled'}>確認順序</button>
+      </div>
+    </div>
     <div class="bulk-actions">
       <label class="select-all"><input type="checkbox" id="select-all-images"> 全選</label>
       <button type="button" class="danger" id="do-remove-selected" disabled>刪除選取的圖片</button>
@@ -384,8 +396,10 @@ function renderDetail() {
   editing.images.forEach((image, i) => {
     const li = document.createElement('li');
     li.className = 'catalog-row';
+    li.dataset.index = i;
     li.innerHTML = `
       <input type="checkbox" class="image-select" data-select="${i}">
+      <span class="drag-handle" draggable="true" title="拖曳排序">⋮⋮</span>
       <img src="${image.src}" alt="">
       <div class="meta"><div class="sub">第 ${i + 1} 張</div></div>
       <button type="button" class="ghost" data-up="${i}" ${i === 0 ? 'disabled' : ''}>上移</button>
@@ -404,7 +418,11 @@ function wireDetail() {
     downloadQr(detail.querySelector('#qr'), `型錄-${editing.title}-QR.png`);
   });
 
-  detail.querySelector('#do-close').addEventListener('click', () => detail.close());
+  detail.querySelector('#do-close').addEventListener('click', () => {
+    if (orderDirty && !confirm('順序尚未儲存，確定要放棄這次調整嗎？')) return;
+    orderDirty = false;
+    detail.close();
+  });
 
   detail.querySelector('#do-rename').addEventListener('click', () => guard(async () => {
     const title = detail.querySelector('#edit-title').value.trim();
@@ -504,17 +522,63 @@ function wireDetail() {
     showStatus('已送出刪除。GitHub Pages 部署中，約 30～60 秒後生效。', 'success');
   }));
 
+  function applyLocalReorder(from, to) {
+    if (from === to) return;
+    editing = reorderImages(editing, from, to);
+    orderDirty = true;
+    renderDetail();
+  }
+
   for (const btn of detail.querySelectorAll('[data-up]')) {
-    btn.addEventListener('click', () => guard(async () => {
+    btn.addEventListener('click', () => {
       const i = Number(btn.dataset.up);
-      await saveCatalog(reorderImages(editing, i, i - 1), `feat: 調整型錄「${editing.title}」圖片順序`);
-    }));
+      applyLocalReorder(i, i - 1);
+    });
   }
   for (const btn of detail.querySelectorAll('[data-down]')) {
-    btn.addEventListener('click', () => guard(async () => {
+    btn.addEventListener('click', () => {
       const i = Number(btn.dataset.down);
-      await saveCatalog(reorderImages(editing, i, i + 1), `feat: 調整型錄「${editing.title}」圖片順序`);
-    }));
+      applyLocalReorder(i, i + 1);
+    });
+  }
+
+  detail.querySelector('#do-confirm-order').addEventListener('click', () => guard(async () => {
+    if (!orderDirty) return;
+    await saveCatalog(editing, `feat: 調整型錄「${editing.title}」圖片順序`);
+  }));
+
+  detail.querySelector('#do-revert-order').addEventListener('click', () => {
+    if (!orderDirty) return;
+    editing = { ...editing, images: lastSavedImages };
+    orderDirty = false;
+    renderDetail();
+  });
+
+  let dragSrcIndex = null;
+  for (const li of detail.querySelectorAll('#image-list > li')) {
+    const targetIndex = Number(li.dataset.index);
+    li.querySelector('.drag-handle').addEventListener('dragstart', (event) => {
+      dragSrcIndex = targetIndex;
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', String(targetIndex));
+    });
+    li.addEventListener('dragover', (event) => {
+      if (dragSrcIndex === null) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+    });
+    li.addEventListener('dragenter', () => {
+      if (dragSrcIndex !== null) li.classList.add('drag-over');
+    });
+    li.addEventListener('dragleave', () => li.classList.remove('drag-over'));
+    li.addEventListener('drop', (event) => {
+      event.preventDefault();
+      li.classList.remove('drag-over');
+      const from = dragSrcIndex;
+      dragSrcIndex = null;
+      if (from === null) return;
+      applyLocalReorder(from, targetIndex);
+    });
   }
   for (const btn of detail.querySelectorAll('[data-remove]')) {
     btn.addEventListener('click', () => guard(async () => {
@@ -557,6 +621,8 @@ async function guard(fn) {
 export async function openDetail(id) {
   await guard(async () => {
     editing = await loadCatalog(id);
+    lastSavedImages = editing.images;
+    orderDirty = false;
     renderDetail();
     detail.showModal();
   });
