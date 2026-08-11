@@ -30,6 +30,13 @@
       "h": 1387
     },
     {
+      "src": "img/36bf43/16.jpg",
+      "orig": "img/36bf43/16.orig.jpg",
+      "w": 1040,
+      "h": 1387,
+      "name": "I_06_保鮮盒"
+    },
+    {
       "src": "img/36bf43/10.jpg",
       "orig": "img/36bf43/10.orig.jpg",
       "w": 1040,
@@ -52,13 +59,6 @@
       "orig": "img/36bf43/14.orig.jpg",
       "w": 1040,
       "h": 1387
-    },
-    {
-      "src": "img/36bf43/16.jpg",
-      "orig": "img/36bf43/16.orig.jpg",
-      "w": 1040,
-      "h": 1387,
-      "name": "I_06_保鮮盒"
     }
   ],
   "bg": "light"
