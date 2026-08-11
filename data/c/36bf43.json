@@ -3,7 +3,7 @@
   "id": "36bf43",
   "title": "公司簡介",
   "active": true,
-  "nextSeq": 15,
+  "nextSeq": 16,
   "images": [
     {
       "src": "img/36bf43/07.jpg",
@@ -20,6 +20,12 @@
     {
       "src": "img/36bf43/13.jpg",
       "orig": "img/36bf43/13.orig.jpg",
+      "w": 1040,
+      "h": 1387
+    },
+    {
+      "src": "img/36bf43/09.jpg",
+      "orig": "img/36bf43/09.orig.jpg",
       "w": 1040,
       "h": 1387
     },
@@ -46,6 +52,13 @@
       "orig": "img/36bf43/14.orig.jpg",
       "w": 1040,
       "h": 1387
+    },
+    {
+      "src": "img/36bf43/15.jpg",
+      "orig": "img/36bf43/15.orig.jpg",
+      "w": 1040,
+      "h": 1387,
+      "name": "I_06_保鮮盒"
     }
   ],
   "bg": "light"
