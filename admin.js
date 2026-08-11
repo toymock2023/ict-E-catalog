@@ -5,7 +5,6 @@ import {
   createCatalog,
   takeSeq,
   addImages,
-  removeImageAt,
   removeImagesAt,
   reorderImages,
   renameCatalog,
@@ -204,6 +203,11 @@ function fileExt(file) {
   return EXT_BY_MIME[file.type] || 'jpg';
 }
 
+// 用原始檔名當辨識用的顯示名稱，去掉副檔名比較像「名稱」而不是「檔名」。
+function fileDisplayName(file) {
+  return file.name.replace(/\.[^./\\]+$/, '');
+}
+
 // 白名單而非「startsWith('image/')」：iPhone 預設拍照格式是 HEIC，
 // 多數瀏覽器的 createImageBitmap 無法解碼，會讓壓縮這一步失敗且錯誤訊息不知所云。
 // 與其讓使用者看到看不懂的失敗訊息，不如上傳前就明確擋下並說明原因。
@@ -290,7 +294,7 @@ newForm.addEventListener('submit', async (event) => {
 
       upserts.push({ path: srcPath, base64: await blobToBase64(blob) });
       upserts.push({ path: origPath, base64: await blobToBase64(file) });
-      images.push({ src: srcPath, orig: origPath, w: width, h: height });
+      images.push({ src: srcPath, orig: origPath, w: width, h: height, name: fileDisplayName(file) });
 
       showStatus(`${rejectedNote}壓縮圖片中… ${i + 1} / ${accepted.length}`, 'info');
     }
@@ -388,6 +392,10 @@ function renderDetail() {
     <hr>
     <button type="button" class="danger" id="do-delete">永久刪除整本型錄</button>
     <button type="button" class="ghost" id="do-close">關閉</button>
+
+    <div id="lightbox" class="lightbox" hidden>
+      <img id="lightbox-img" alt="">
+    </div>
   `;
   detail.querySelector('#detail-title').textContent = editing.title;
   detail.querySelector('#edit-title').value = editing.title;
@@ -400,12 +408,16 @@ function renderDetail() {
     li.innerHTML = `
       <input type="checkbox" class="image-select" data-select="${i}">
       <span class="drag-handle" draggable="true" title="拖曳排序">⋮⋮</span>
-      <img src="${image.src}" alt="">
-      <div class="meta"><div class="sub">第 ${i + 1} 張</div></div>
+      <img class="zoomable" src="${image.src}" alt="" title="點擊放大">
+      <div class="meta">
+        <div class="img-name"></div>
+        <div class="sub">第 ${i + 1} 張</div>
+      </div>
       <button type="button" class="ghost" data-up="${i}" ${i === 0 ? 'disabled' : ''}>上移</button>
       <button type="button" class="ghost" data-down="${i}" ${i === editing.images.length - 1 ? 'disabled' : ''}>下移</button>
-      <button type="button" class="danger" data-remove="${i}">刪除</button>
     `;
+    // 圖片名稱來自使用者上傳時的原始檔名，一律用 textContent 避免把 HTML 塞進頁面
+    li.querySelector('.img-name').textContent = image.name || '';
     list.appendChild(li);
   });
 
@@ -464,7 +476,7 @@ function wireDetail() {
       const origPath = `img/${catalog.id}/${imageFileName(seq, 'orig', ext)}`;
       upserts.push({ path: srcPath, base64: await blobToBase64(blob) });
       upserts.push({ path: origPath, base64: await blobToBase64(file) });
-      images.push({ src: srcPath, orig: origPath, w: width, h: height });
+      images.push({ src: srcPath, orig: origPath, w: width, h: height, name: fileDisplayName(file) });
     }
 
     catalog = addImages(catalog, images);
@@ -554,6 +566,18 @@ function wireDetail() {
     renderDetail();
   });
 
+  const lightbox = detail.querySelector('#lightbox');
+  const lightboxImg = detail.querySelector('#lightbox-img');
+  for (const img of detail.querySelectorAll('.zoomable')) {
+    img.addEventListener('click', () => {
+      lightboxImg.src = img.getAttribute('src');
+      lightbox.hidden = false;
+    });
+  }
+  lightbox.addEventListener('click', () => {
+    lightbox.hidden = true;
+  });
+
   let dragSrcIndex = null;
   for (const li of detail.querySelectorAll('#image-list > li')) {
     const targetIndex = Number(li.dataset.index);
@@ -580,17 +604,6 @@ function wireDetail() {
       applyLocalReorder(from, targetIndex);
     });
   }
-  for (const btn of detail.querySelectorAll('[data-remove]')) {
-    btn.addEventListener('click', () => guard(async () => {
-      const i = Number(btn.dataset.remove);
-      const image = editing.images[i];
-      if (!confirm(`確定要刪除第 ${i + 1} 張圖片嗎？`)) return;
-      await saveCatalog(removeImageAt(editing, i), `feat: 型錄「${editing.title}」刪除第 ${i + 1} 張圖片`, {
-        deletes: [image.src, image.orig],
-      });
-    }));
-  }
-
   // 放在最後才呼叫：QR 產生失敗不能連帶讓上面所有按鈕都沒接上監聽器。
   try {
     renderQr(detail.querySelector('#qr'), catalogUrl(editing.id));

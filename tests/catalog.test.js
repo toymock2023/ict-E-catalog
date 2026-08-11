@@ -5,7 +5,6 @@ import {
   createCatalog,
   takeSeq,
   addImages,
-  removeImageAt,
   removeImagesAt,
   reorderImages,
   renameCatalog,
@@ -68,7 +67,7 @@ test('takeSeq 取號後計數器前進，且不修改原物件', () => {
 
 test('刪除圖片後再新增不會重用序號', () => {
   let cat = catalogWithImages(3); // 用掉 1,2,3；nextSeq = 4
-  cat = removeImageAt(cat, 2); // 刪掉第 3 張
+  cat = removeImagesAt(cat, [2]); // 刪掉第 3 張
   assert.equal(cat.images.length, 2);
   assert.equal(cat.nextSeq, 4, '刪除不得讓序號倒退');
   const { seqs } = takeSeq(cat, 1);
@@ -89,11 +88,6 @@ test('reorderImages 索引超出範圍時丟出錯誤', () => {
   const cat = catalogWithImages(2);
   assert.throws(() => reorderImages(cat, 0, 5), /索引超出範圍/);
   assert.throws(() => reorderImages(cat, -1, 1), /索引超出範圍/);
-});
-
-test('removeImageAt 索引超出範圍時丟出錯誤', () => {
-  const cat = catalogWithImages(2);
-  assert.throws(() => removeImageAt(cat, 9), /索引超出範圍/);
 });
 
 test('removeImagesAt 一次移除多筆，且不受傳入順序影響', () => {
